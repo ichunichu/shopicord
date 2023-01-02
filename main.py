@@ -2,8 +2,10 @@ import asyncio
 import discord
 
 from discord.embeds import EmptyEmbed
+from discord.ext import commands
 from dotenv import load_dotenv
 
+from discord import default_permissions
 from utility.database import Database
 
 load_dotenv()
@@ -18,9 +20,10 @@ def bigDict():
 
 
 # noinspection PyBroadException
-class MyClient(discord.Client):
-    def __init__(self) -> None:
-        super().__init__()
+class MyClient(commands.Bot):
+    def __init__(self,command_prefix) -> None:
+        print(command_prefix)
+        self.bot = super().__init__(command_prefix=command_prefix)
         self.db = Database()
         self.prefix = ";"
         self.messages = {}
@@ -30,6 +33,11 @@ class MyClient(discord.Client):
         self.product = []
         # self.shop=[{"current":158,"NAME":None,"DESC":None,"AUTHOR":""},]
         # self.shop = {"messageid":{"precede":self.shop["messageid"],"content":"str","TYPE":"NAME"}}
+
+
+
+
+
 
     async def on_ready(self):
         print('Logged on as {0}!'.format(self.user))
@@ -96,27 +104,6 @@ class MyClient(discord.Client):
         # shop = self.db.getShops(dico["AUTHOR"],dico["CURRENT"].guild.id)
         await self.productsMess(shopid, slice(len(shop), len(shop) + 1))
 
-    async def admin(self, message):
-        """
-        SHOW THE ADMIN PANEL
-        """
-        print(f'{message.author} asked for the adminpanel {message.content} on {message.guild.id}')
-        rep = discord.Embed(title="Your admin panel", description="Desc", color=0x5f00ff)
-        rep.add_field(name="Create", value="🛒: create a new shop\n 📦: create a new product", inline=True)
-        rep.add_field(name="Modify", value="⚙: modify a shop\n 📜: modify a product", inline=False)
-        # await message.channel.send(rep)
-        rep = await message.reply(embed=rep)
-        self.messages[rep.id] = {"OBJECT": message, "response": rep, "TYPE": "ADMIN"}
-        await rep.add_reaction('🛒')
-        await rep.add_reaction('📦')
-        await rep.add_reaction('⚙')
-        await rep.add_reaction('📜')
-        await rep.add_reaction('♻️')
-        await asyncio.sleep(300)
-
-        self.messages.pop(rep.id)
-        await message.delete()
-        await rep.delete()
 
     async def adminReact(self, reaction):
         """
@@ -405,7 +392,45 @@ class MyClient(discord.Client):
                     #        await reaction.message.delete()
                     #        self.messages.pop(reaction.message.id)
                     #    print("gdfigfdhugfehi")
+
+
+
 TOKEN=os.environ.get("TOKEN")
 
-client = MyClient()
-client.run(TOKEN)
+bot = MyClient(command_prefix="$")
+
+class AdminView(discord.ui.View): # Create a class called MyView that subclasses discord.ui.View
+    @discord.ui.button(label="Click me!", style=discord.ButtonStyle.primary, emoji="😎") # Create a button with the label "😎 Click me!" with color Blurple
+    async def button_callback(self, button, interaction):
+        await interaction.response.send_message("You clicked the button!")
+
+@bot.slash_command()
+async def admin(ctx):
+    """
+    SHOW THE ADMIN PANEL
+    """
+
+    #print(f'{ctx.author} asked for the adminpanel on {ctx.guild.id}')
+    rep = discord.Embed(title="Your admin panel", description="Desc", color=0x5f00ff)
+    rep.add_field(name="Create", value="🛒: create a new shop\n 📦: create a new product", inline=True)
+    rep.add_field(name="Modify", value="⚙: modify a shop\n 📜: modify a product", inline=False)
+    # await message.channel.send(rep)
+    rep = await ctx.respond(embed=rep,view=AdminView())
+    rep.delete_original_message()
+    #rep_message = rep.message
+    #bot.messages[rep.id] = {"OBJECT": "ADMIN", "response": rep, "TYPE": "ADMIN"}
+    #await rep_message.add_reaction('🛒')
+    #await rep_message.add_reaction('📦')
+    #await rep_message.add_reaction('⚙')
+    #await rep_message.add_reaction('📜')
+    #await rep_message.add_reaction('♻️')
+    await asyncio.sleep(300)
+
+    bot.messages.pop(rep.id)
+
+    await ctx.delete_original_response()
+
+
+bot.run(TOKEN)
+
+

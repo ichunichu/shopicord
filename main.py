@@ -105,32 +105,6 @@ class MyClient(commands.Bot):
         await self.productsMess(shopid, slice(len(shop), len(shop) + 1))
 
 
-    async def adminReact(self, reaction):
-        """
-        INTERPRETE REACTION OF THE ADMIN PANEL
-        """
-        match reaction.emoji:
-            case "🛒":
-                # try:
-                #    self.db.checkServer(reaction.message.guild.id)
-                # except:
-                #    reaction.emoji = reaction.message.channel.send("Exception with the database, please try again")
-                rep = await reaction.message.channel.send("**REPLY** with the name of your shop")
-                await rep.add_reaction('❌')
-                self.shop.append({"CURRENT": rep, "NAME": None, "DESC": None,
-                                  "AUTHOR": reaction.message.reference.cached_message.author})
-            case "📦":
-                await self.UserShops(reaction.message.reference.cached_message, "PRODUCTCREATE")
-                # await reaction.message.channel.send("you want to create a product")
-            case "⚙":
-                await self.UserShops(reaction.message.reference.cached_message,"UPDATE")
-            case "📜":
-                await self.UserShops(reaction.message.reference.cached_message,"UPDATES")
-            case "♻️":
-                await self.UserShops(reaction.message.reference.cached_message, "DEBUG")
-
-
-
 
     async def UserShops(self, message,func=""):  # Display the shops of the user (same panel for modify shop and debug and add new products)
         shops = self.db.getShops(message.author.id, message.guild.id)
@@ -387,12 +361,6 @@ class MyClient(commands.Bot):
                                     await self.shop[i]["CURRENT"].delete()
                                     self.shop.pop(i)
 
-                    # if self.shop[reaction.message.id]["TYPE"] == "ASKNAME":
-                    #    if reaction.emoji == "❌":
-                    #        await reaction.message.delete()
-                    #        self.messages.pop(reaction.message.id)
-                    #    print("gdfigfdhugfehi")
-
 
 
 TOKEN=os.environ.get("TOKEN")
@@ -400,9 +368,41 @@ TOKEN=os.environ.get("TOKEN")
 bot = MyClient(command_prefix="$")
 
 class AdminView(discord.ui.View): # Create a class called MyView that subclasses discord.ui.View
-    @discord.ui.button(label="Click me!", style=discord.ButtonStyle.primary, emoji="😎") # Create a button with the label "😎 Click me!" with color Blurple
-    async def button_callback(self, button, interaction):
-        await interaction.response.send_message("You clicked the button!")
+
+    @discord.ui.button(label="Click me!", style=discord.ButtonStyle.primary, emoji="🛒")
+    async def button_destruct(self,button,interaction):
+        #if (interaction.channel and interaction.channel.id):
+        rep = await interaction.response.send_message("**REPLY** with the name of your shop")
+        print(rep.to_dict())
+        #else:
+        #    rep = await interaction.user.send("**REPLY** with the name of your shop")
+        rep_message = await interaction.original_response()
+        await rep.response.message.add_reaction('❌')
+        bot.shop.append({"CURRENT": rep_message, "NAME": None, "DESC": None,
+                          "AUTHOR": interaction.user.id})
+        return
+
+    @discord.ui.button(label="Click me!", style=discord.ButtonStyle.primary, emoji="📦")
+    async def button_userShop(self,button,interaction):
+        await bot.UserShops(interaction.message.reference.cached_message, "PRODUCTCREATE")
+    # await reaction.message.channel.send("you want to create a product")
+
+
+    @discord.ui.button(label="Click me!", style=discord.ButtonStyle.primary, emoji="⚙")
+    async def button_settings(self,button,interaction):
+
+        await bot.UserShops(interaction.message.reference.cached_message, "UPDATE")
+
+    @discord.ui.button(label="Click me!", style=discord.ButtonStyle.primary, emoji="📜")
+    async def button_settings(self, button, interaction):
+        await self.UserShops(interaction.message.reference.cached_message, "UPDATES")
+        pass
+
+    @discord.ui.button(label="Click me!", style=discord.ButtonStyle.primary, emoji="♻️")
+    async def button_settings(self, button, interaction):
+        await self.UserShops(interaction.message.reference.cached_message, "DEBUG")
+
+
 
 @bot.slash_command()
 async def admin(ctx):
@@ -416,7 +416,6 @@ async def admin(ctx):
     rep.add_field(name="Modify", value="⚙: modify a shop\n 📜: modify a product", inline=False)
     # await message.channel.send(rep)
     rep = await ctx.respond(embed=rep,view=AdminView())
-    rep.delete_original_message()
     #rep_message = rep.message
     #bot.messages[rep.id] = {"OBJECT": "ADMIN", "response": rep, "TYPE": "ADMIN"}
     #await rep_message.add_reaction('🛒')

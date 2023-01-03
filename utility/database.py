@@ -27,14 +27,8 @@ class Database:
         print(type(serverId), type(shopOwner), type(name), type(description))
         self.database.create_document(discord,shopsCollection,ID.unique(),{"serverId":str(serverId),"shopOwner":str(shopOwner),"name":name,"description":description,"channel":str(channelId)})
 
-    def addProduct(self, shopid, price, name, description, IMGURL):
-        try:
-            # print(f'INSERT INTO "main"."Offers"("ShopId", "Price", "Name", "Desc", "ImageUrl")VALUES ({shopid}, {price}, "{name}", "{description}", "{IMGURL}");')
-            self.cur.execute(
-                f'INSERT INTO "main"."Offers"("ShopId", "Price", "Name", "Desc", "ImageUrl")VALUES ({shopid}, {price}, "{name}", "{description}", "{IMGURL}");')
-            return True
-        except:
-            return False
+    def addOffer(self, shopId, price, name, description, imgUrl):
+        self.database.create_document(discord,offersCollection,ID.unique(),{"shopId":shopId,"price":float(price),"name":name,"description":description,"imageUrl":imgUrl})
 
     def getShops(self, shopOwner, guildid):
         command = f'SELECT * FROM "main"."Shops" WHERE ShopOwner = "{shopOwner}" and ServerId = {guildid} ORDER BY Shopid;'
@@ -52,9 +46,10 @@ class Database:
         res = self.cur.fetchall()
         return res
 
-    def getShopByChannel(self,channelId):
+    def getShopByChannel(self,guildId,channelId):
         documents = self.database.list_documents(discord,shopsCollection,[
-            Query.equal("channel",str(channelId))
+            Query.equal("channel",str(channelId)),
+            Query.equal("serverId",str(guildId))
         ])
         print(documents)
         print(type(documents))

@@ -1,5 +1,8 @@
 import asyncio
+
+
 import discord
+from discord import InputTextStyle
 
 from discord.embeds import EmptyEmbed
 from discord.ext import commands
@@ -7,16 +10,14 @@ from discord.ui import InputText
 
 from dotenv import load_dotenv
 
-from discord import default_permissions
 
 from utility.database import Database
+
 
 load_dotenv()
 import os
 
-
-def bigDict():
-    pass
+TOKEN=os.environ.get("TOKEN")
 apikey = os.environ.get("DATABASE_API")
 database = Database(apikey=apikey)
 
@@ -31,7 +32,7 @@ class MyClient(commands.Bot):
         self.followup = {}
         self.react = ["0️⃣", "1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"]
 
-        self.shop = []
+        self.shop = {}
         self.product = []
         # self.shop=[{"current":158,"NAME":None,"DESC":None,"AUTHOR":""},]
         # self.shop = {"messageid":{"precede":self.shop["messageid"],"content":"str","TYPE":"NAME"}}
@@ -98,6 +99,127 @@ class MyClient(commands.Bot):
 
 bot = MyClient(command_prefix="$")
 
+#"""
+#ADMIN PANEL/OPTIONS
+#"""
+#class AdminView(discord.ui.View): # Create a class called MyView that subclasses discord.ui.View
+#    @discord.ui.button(label="Click me!", style=discord.ButtonStyle.primary, emoji="🛒")
+#    async def button_destruct(self,button,interaction):
+#        await interaction.response.edit_message(content="select the channel", view=CreateShopView())
+#
+#    @discord.ui.button(label="Click me!", style=discord.ButtonStyle.primary, emoji="📦")
+#    async def button_userShop(self,button,interaction):
+#        await bot.UserShops(interaction.message.reference.cached_message, "PRODUCTCREATE")
+#    # await reaction.message.channel.send("you want to create a product")
+#
+#
+#    @discord.ui.button(label="Click me!", style=discord.ButtonStyle.primary, emoji="⚙")
+#    async def button_settings(self,button,interaction):
+#
+#        await bot.UserShops(interaction.message.reference.cached_message, "UPDATE")
+#
+#    @discord.ui.button(label="Click me!", style=discord.ButtonStyle.primary, emoji="📜")
+#    async def button_settings(self, button, interaction):
+#        await self.UserShops(interaction.message.reference.cached_message, "UPDATES")
+#        pass
+#
+#    @discord.ui.button(label="Click me!", style=discord.ButtonStyle.primary, emoji="♻️")
+#    async def button_settings(self, button, interaction):
+#        await self.UserShops(interaction.message.reference.cached_message, "DEBUG")
+#@bot.slash_command()
+#async def admin(ctx):
+#    """
+#    SHOW THE ADMIN PANEL
+#    """
+#    rep = discord.Embed(title="Your admin panel", description="Desc", color=0x5f00ff)
+#    rep.add_field(name="Create", value="🛒: create a new shop\n 📦: create a new product", inline=True)
+#    rep.add_field(name="Modify", value="⚙: modify a shop\n 📜: modify a product", inline=False)
+#    rep = await ctx.respond(embed=rep,view=AdminView())
+#    await asyncio.sleep(300)
+#    bot.messages.pop(rep.id)
+#
+#    await ctx.delete_original_response()
+
+
+
+
+
+"""
+SHOP PANEL/OPTIONS
+"""
+class ShopExistView(discord.ui.View):
+    def __init__(self,shopId=None) -> None:
+        super().__init__()
+        self.shopId = shopId
+
+    @discord.ui.button(label="Add a product!", style=discord.ButtonStyle.primary, emoji="🛒")
+    async def button_add_product(self, button, interaction):
+        bot.followup[interaction.custom_id] = {"shopId":self.shopId}
+        await interaction.response.send_modal(OfferModal(title="Offer info",custom_id=interaction.custom_id))
+        await asyncio.sleep(300)
+        if bot.followup.get(interaction.custom_id):
+            bot.followup.pop(interaction.custom_id)
+
+
+    @discord.ui.button(label="Go to Settings!", style=discord.ButtonStyle.primary, emoji="⚙️")
+    async def button_shop_settings(self, button, interaction):
+        channelId = interaction.channel_id
+        guildId = interaction.guild_id
+        if bot.shop[str(guildId) + ":" + str(channelId)]:
+            shop_data = bot.shop[str(guildId) + ":" + str(channelId)]
+        else:
+            shop_data = bot.db.getShopByChannel(str(guildId), str(channelId))
+        rep = discord.Embed(title=shop_data["name"], description=shop_data["description"], color=0x5f00ff)
+        await interaction.response.edit_message(embed=rep,view=ShopSettingsView())
+class ShopNotExistView(discord.ui.View):
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+
+    @discord.ui.button(label="Create Shop!", style=discord.ButtonStyle.green, emoji="🛒")
+    async def button_add_product(self, button, interaction):
+        await interaction.response.edit_message("test", view=CreateShopView())
+
+    @discord.ui.button(label="Select another shop!", style=discord.ButtonStyle.gray, emoji="📋")
+    async def button_select_shop(self, button, interaction):
+        print("Another Shop")
+class ShopSettingsView(discord.ui.View):
+    @discord.ui.button(label="Edit shop informations!", style=discord.ButtonStyle.primary, emoji="✏️")
+    async def button_edit(self, button, interaction):
+        pass
+    @discord.ui.button(label="Delete shop", style=discord.ButtonStyle.danger,emoji="🗑️")
+    async def button_delete(self,button,interaction):
+        pass
+@bot.slash_command()
+async def shop(ctx):
+    """
+    SHOW THE SHOP PANEL
+    """
+    channelId = ctx.channel_id
+    guildId = ctx.guild_id
+    if bot.shop.get(str(guildId) + ":" + str(channelId)):
+        shop_data = bot.shop[str(guildId) + ":" + str(channelId)]
+    else:
+        shop_data = bot.db.getShopByChannel(guildId,channelId)
+    if shop_data:
+
+        rep = discord.Embed(title=shop_data["name"], description=shop_data["description"], color=0x5f00ff)
+        rep.add_field(name="Add a product", value="🛒: ", inline=True)
+        rep.add_field(name="Modify", value="⚙: modify a shop\n 📜: modify a product", inline=False)
+        await ctx.respond(embed=rep, view=ShopExistView(shop_data["$id"]))
+
+        if not bot.shop.get(str(guildId) + ":" + str(channelId)):
+            bot.shop[str(guildId) + ":" + str(channelId)] =shop_data
+            await asyncio.sleep(120)
+            bot.shop.pop(str(guildId) + ":" + str(channelId))
+    else:
+        rep = discord.Embed(title="ShopiCord", description="Sell on discord", color=0x5f00ff)
+        rep.add_field(name="Info", value="There is no shop in this channel", inline=True)
+        await ctx.respond(embed=rep, view=ShopNotExistView())
+
+
+"""
+CREATING a SHOP
+"""
 class ShopModal(discord.ui.Modal):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -122,9 +244,8 @@ class ShopModal(discord.ui.Modal):
         embed.add_field(name="description", value=description)
 
         database.addShop(guild,user,name,description,channel.id)
-        await interaction.response.send_message(embeds=[embed])
-
-class ChannelSelectView(discord.ui.View):
+        await interaction.response.edit_message(embeds=[embed])
+class CreateShopView(discord.ui.View):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
     @discord.ui.channel_select(
@@ -138,91 +259,41 @@ class ChannelSelectView(discord.ui.View):
         print(interaction.custom_id)
         print("submited")
 
-
-
-class AdminView(discord.ui.View): # Create a class called MyView that subclasses discord.ui.View
-    @discord.ui.button(label="Click me!", style=discord.ButtonStyle.primary, emoji="🛒")
-    async def button_destruct(self,button,interaction):
-        view = ChannelSelectView()
-        await interaction.response.send_message("test",view=view)
-
-    @discord.ui.button(label="Click me!", style=discord.ButtonStyle.primary, emoji="📦")
-    async def button_userShop(self,button,interaction):
-        await bot.UserShops(interaction.message.reference.cached_message, "PRODUCTCREATE")
-    # await reaction.message.channel.send("you want to create a product")
-
-
-    @discord.ui.button(label="Click me!", style=discord.ButtonStyle.primary, emoji="⚙")
-    async def button_settings(self,button,interaction):
-
-        await bot.UserShops(interaction.message.reference.cached_message, "UPDATE")
-
-    @discord.ui.button(label="Click me!", style=discord.ButtonStyle.primary, emoji="📜")
-    async def button_settings(self, button, interaction):
-        await self.UserShops(interaction.message.reference.cached_message, "UPDATES")
-        pass
-
-    @discord.ui.button(label="Click me!", style=discord.ButtonStyle.primary, emoji="♻️")
-    async def button_settings(self, button, interaction):
-        await self.UserShops(interaction.message.reference.cached_message, "DEBUG")
-
-
-
-@bot.slash_command()
-async def admin(ctx):
-    """
-    SHOW THE ADMIN PANEL
-    """
-    rep = discord.Embed(title="Your admin panel", description="Desc", color=0x5f00ff)
-    rep.add_field(name="Create", value="🛒: create a new shop\n 📦: create a new product", inline=True)
-    rep.add_field(name="Modify", value="⚙: modify a shop\n 📜: modify a product", inline=False)
-    rep = await ctx.respond(embed=rep,view=AdminView())
-    await asyncio.sleep(300)
-    bot.messages.pop(rep.id)
-
-    await ctx.delete_original_response()
-
-class ShopExistView(discord.ui.View):
+"""
+CREATING PRODUCT
+"""
+class OfferModal(discord.ui.Modal):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
+        self.add_item(InputText(label="title",required=True,placeholder="The title of your Offer"))
+        self.add_item(InputText(label="description", required=True,placeholder="The description of your Offer"))
+        self.add_item(InputText(label="price",required=True,style=InputTextStyle.short, placeholder="The price of your Offer in USD"))
+        self.add_item(InputText(label="imageUrl",required=False,placeholder="https://yourimage.com/yourimage"))
 
-    @discord.ui.button(label="Add a product!", style=discord.ButtonStyle.primary, emoji="🛒")
-    async def button_add_product(self, button, interaction):
-        print("add product")
+    async def callback(self, interaction: discord.Interaction):
+        print(interaction.custom_id)
+        data = bot.followup[interaction.custom_id]
+        print(data)
+        shopId = data["shopId"]
+        name = self.children[0].value
+        description = self.children[1].value
+        price = self.children[2].value
+        imageUrl = self.children[3].value
+        embed = discord.Embed(title="Modal Results")
+        embed.add_field(name="price", value=price)
+        embed.add_field(name="shopId", value=shopId)
+        embed.add_field(name="imageUrl", value=imageUrl)
+        embed.add_field(name="name", value=name)
+        embed.add_field(name="description", value=description)
 
-class ShopNotExistView(discord.ui.View):
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-
-    @discord.ui.button(label="Create Shop!", style=discord.ButtonStyle.green, emoji="🛒")
-    async def button_add_product(self, button, interaction):
-        await interaction.response.send_message("test", view=ChannelSelectView())
-
-    @discord.ui.button(label="Select another shop!", style=discord.ButtonStyle.gray, emoji="📋")
-    async def button_select_shop(self, button, interaction):
-        print("Another Shop")
+        database.addOffer(shopId, price, name, description, imageUrl)
+        await interaction.response.edit_message(embeds=[embed])
+        await asyncio.sleep(4)
+        await interaction.delete_original_response()
 
 
-@bot.slash_command()
-async def shop(ctx):
-    """
-    SHOW THE SHOP PANEL
-    """
-    channelId = ctx.channel_id
-    shop_data = bot.db.getShopByChannel(channelId)
-    if shop_data:
-        rep = discord.Embed(title=shop_data["name"], description=shop_data["description"], color=0x5f00ff)
-        rep.add_field(name="Add a product", value="🛒: ", inline=True)
-        rep.add_field(name="Modify", value="⚙: modify a shop\n 📜: modify a product", inline=False)
-        await ctx.respond(embed=rep, view=ShopExistView())
-    else:
-        rep = discord.Embed(title="ShopiCord", description="Sell on discord", color=0x5f00ff)
-        rep.add_field(name="Info", value="There is no shop in this channel", inline=True)
-        await ctx.respond(embed=rep, view=ShopNotExistView())
 
-TOKEN=os.environ.get("TOKEN")
+
 
 
 bot.run(TOKEN)
-
-

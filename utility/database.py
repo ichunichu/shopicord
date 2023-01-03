@@ -58,6 +58,8 @@ class Database:
         ])
         print(documents)
         print(type(documents))
+        if documents["total"] == 0:
+            return False
         return documents["documents"][0]
 
 

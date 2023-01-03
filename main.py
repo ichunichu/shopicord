@@ -190,6 +190,18 @@ class ShopExistView(discord.ui.View):
     async def button_add_product(self, button, interaction):
         print("add product")
 
+class ShopNotExistView(discord.ui.View):
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+
+    @discord.ui.button(label="Create Shop!", style=discord.ButtonStyle.green, emoji="🛒")
+    async def button_add_product(self, button, interaction):
+        await interaction.response.send_message("test", view=ChannelSelectView())
+
+    @discord.ui.button(label="Select another shop!", style=discord.ButtonStyle.gray, emoji="📋")
+    async def button_select_shop(self, button, interaction):
+        print("Another Shop")
+
 
 @bot.slash_command()
 async def shop(ctx):
@@ -203,6 +215,10 @@ async def shop(ctx):
         rep.add_field(name="Add a product", value="🛒: ", inline=True)
         rep.add_field(name="Modify", value="⚙: modify a shop\n 📜: modify a product", inline=False)
         await ctx.respond(embed=rep, view=ShopExistView())
+    else:
+        rep = discord.Embed(title="ShopiCord", description="Sell on discord", color=0x5f00ff)
+        rep.add_field(name="Info", value="There is no shop in this channel", inline=True)
+        await ctx.respond(embed=rep, view=ShopNotExistView())
 
 TOKEN=os.environ.get("TOKEN")
 

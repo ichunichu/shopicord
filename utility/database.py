@@ -1,30 +1,30 @@
-import sqlite3
+import appwrite
 
+
+from appwrite.client import Client
+from appwrite.id import ID
+from appwrite.services.databases import Databases
+
+
+discord ="63b40250a8cac7c962fd"
+offersCollection = "63b402fe5c72118d86a6"
+shopsCollection = "63b40271364e51952c74"
 
 class Database:
-    def __init__(self):
-        self.con = sqlite3.connect('discord.db', isolation_level=None)
-        self.cur = self.con.cursor()
+    def __init__(self,apikey):
+        self.client = Client()
 
-    def addServer(self, serverId):
-        self.cur.execute(f'INSERT INTO "main"."Servers"("id") VALUES ({serverId});')
+        (self.client
+         .set_endpoint('https://appwrite.senditeverywhere.com/v1')  # Your API Endpoint
+         .set_project('63b4021b72c1369605fc')  # Your project ID
+         .set_key(apikey)  # Your secret API key
+         )
+        self.database = Databases(self.client)
 
-    def checkServer(self, serverId):
-        self.cur.execute(f'select count(*) from Servers WHERE id = {serverId} ORDER BY id;')
-        if self.cur.fetchone()[0] == 1:
-            # self.con.close()
-            return True
-        else:
-            self.addServer(serverId)
-            # self.con.close()
-            return True
-
-    def addShop(self, serverId, shopOwner, Name="", Description=""):
-        print(serverId, shopOwner, Name, Description)
-        self.cur.execute(
-            f'INSERT INTO "main"."Shops"("ServerId", "ShopOwner", "Name", "Description")VALUES ({serverId}, "{shopOwner}", "{Name}", "{Description}") returning ServerId;')
-
-        return self.numToShop(shopOwner, serverId, -1)[0]
+    def addShop(self, serverId, shopOwner, name="", description="",channelId=""):
+        print(serverId, shopOwner, name, description)
+        print(type(serverId), type(shopOwner), type(name), type(description))
+        self.database.create_document(discord,shopsCollection,ID.unique(),{"serverId":str(serverId),"shopOwner":str(shopOwner),"name":name,"description":description,"channel":str(channelId)})
 
     def addProduct(self, shopid, price, name, description, IMGURL):
         try:
@@ -50,9 +50,6 @@ class Database:
         self.cur.execute(mystr)
         res = self.cur.fetchall()
         return res
-
-    def numToShop(self, shopOwner, guildid, num):
-        return self.getShops(shopOwner, guildid)[num]
 
     def getShop(self, shopOwner="", shopName="", guildid="", shopid=None):
         rep = 0

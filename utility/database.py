@@ -4,6 +4,7 @@ import appwrite
 from appwrite.client import Client
 from appwrite.id import ID
 from appwrite.services.databases import Databases
+from appwrite.query import Query
 
 
 discord ="63b40250a8cac7c962fd"
@@ -50,6 +51,15 @@ class Database:
         self.cur.execute(mystr)
         res = self.cur.fetchall()
         return res
+
+    def getShopByChannel(self,channelId):
+        documents = self.database.list_documents(discord,shopsCollection,[
+            Query.equal("channel",str(channelId))
+        ])
+        print(documents)
+        print(type(documents))
+        return documents["documents"][0]
+
 
     def getShop(self, shopOwner="", shopName="", guildid="", shopid=None):
         rep = 0

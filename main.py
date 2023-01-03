@@ -173,16 +173,36 @@ async def admin(ctx):
     """
     SHOW THE ADMIN PANEL
     """
-    #print(f'{ctx.author} asked for the adminpanel on {ctx.guild.id}')
     rep = discord.Embed(title="Your admin panel", description="Desc", color=0x5f00ff)
     rep.add_field(name="Create", value="🛒: create a new shop\n 📦: create a new product", inline=True)
     rep.add_field(name="Modify", value="⚙: modify a shop\n 📜: modify a product", inline=False)
-    # await message.channel.send(rep)
     rep = await ctx.respond(embed=rep,view=AdminView())
     await asyncio.sleep(300)
     bot.messages.pop(rep.id)
 
     await ctx.delete_original_response()
+
+class ShopExistView(discord.ui.View):
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+
+    @discord.ui.button(label="Add a product!", style=discord.ButtonStyle.primary, emoji="🛒")
+    async def button_add_product(self, button, interaction):
+        print("add product")
+
+
+@bot.slash_command()
+async def shop(ctx):
+    """
+    SHOW THE SHOP PANEL
+    """
+    channelId = ctx.channel_id
+    shop_data = bot.db.getShopByChannel(channelId)
+    if shop_data:
+        rep = discord.Embed(title=shop_data["name"], description=shop_data["description"], color=0x5f00ff)
+        rep.add_field(name="Add a product", value="🛒: ", inline=True)
+        rep.add_field(name="Modify", value="⚙: modify a shop\n 📜: modify a product", inline=False)
+        await ctx.respond(embed=rep, view=ShopExistView())
 
 TOKEN=os.environ.get("TOKEN")
 

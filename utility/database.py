@@ -27,8 +27,12 @@ class Database:
         print(type(serverId), type(shopOwner), type(name), type(description))
         self.database.create_document(discord,shopsCollection,ID.unique(),{"serverId":str(serverId),"shopOwner":str(shopOwner),"name":name,"description":description,"channel":str(channelId)})
 
-    def addOffer(self, shopId, price, name, description, imgUrl):
-        self.database.create_document(discord,offersCollection,ID.unique(),{"shopId":shopId,"price":float(price),"name":name,"description":description,"imageUrl":imgUrl})
+    def addOffer(self, shopId, price, name, description, imgUrl=None):
+        return self.database.create_document(discord,offersCollection,ID.unique(),{"shopId":shopId,"price":float(price),"name":name,"description":description,"imageUrl":None})
+
+    def editOffer(self, offer_id, price, name, description, imgUrl):
+        return self.database.update_document(discord,offersCollection,offer_id,{"price":float(price),"name":name,"description":description,"imageUrl":imgUrl})
+
 
     def getShops(self, shopOwner, guildid):
         command = f'SELECT * FROM "main"."Shops" WHERE ShopOwner = "{shopOwner}" and ServerId = {guildid} ORDER BY Shopid;'
@@ -41,10 +45,20 @@ class Database:
         return res
 
     def getOffers(self, shopid):
-        mystr = f'SELECT * FROM "main"."Offers" WHERE ShopId = "{shopid}" ORDER BY Shopid;'
-        self.cur.execute(mystr)
-        res = self.cur.fetchall()
-        return res
+        offers = self.database.list_documents(discord,offersCollection,[
+            Query.equal("shopId",shopid)
+        ])
+        if offers["total"] == 0:
+            return False
+        else:
+            return offers["documents"]
+
+    def getOffer(self, offerid):
+        offer = self.database.get_document(discord,offersCollection,offerid)
+        if offer:
+            print(offer)
+            return offer
+        return False
 
     def getShopByChannel(self,guildId,channelId):
         documents = self.database.list_documents(discord,shopsCollection,[
@@ -54,6 +68,15 @@ class Database:
         print(documents)
         print(type(documents))
         if documents["total"] == 0:
+            return False
+        return documents["documents"][0]
+
+    def getShopByOffer(self,offer):
+        print(offer)
+        documents = self.database.list_documents(discord,shopsCollection,[
+            Query.equal("$id",offer["shopId"])
+        ])
+        if documents["total"] ==0:
             return False
         return documents["documents"][0]
 

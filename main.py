@@ -109,7 +109,7 @@ class SelectOffer(discord.ui.Select):
             max_values=1,
             custom_id=custom_id,
             options=[
-                discord.SelectOption(label=offer["name"], value=offer['$id']) for offer in offers
+                discord.SelectOption(label=offer["name"], value=offer['id']) for offer in offers
             ]
         )
 
@@ -134,8 +134,8 @@ class SelectOfferView(discord.ui.View):
 async def refresh(guild_id,channel_id):
     shop = database.getShopByChannel(guild_id, channel_id)
 
-    offers = database.getOffers(shop["$id"])
-    channel: discord.TextChannel = await bot.fetch_channel(shop["channel"])
+    offers = database.getOffers(shop["id"])
+    channel: discord.TextChannel = await bot.fetch_channel(shop["channel_id"])
 
     await channel.purge(limit=240)
 
@@ -174,7 +174,7 @@ class ShopExistView(discord.ui.View):
             shop_data = bot.shop[str(guildId) + ":" + str(channel_id)]
         else:
             shop_data = bot.db.getShopByChannel(str(guildId), str(channel_id))
-        bot.add_followup(key=interaction.custom_id,type="edit shop",shop_id=shop_data["$id"],shop_data=shop_data)
+        bot.add_followup(key=interaction.custom_id,type="edit shop",shop_id=shop_data["id"],shop_data=shop_data)
         rep = discord.Embed(title=shop_data["name"], description=shop_data["description"], color=0x5f00ff)
         await interaction.response.edit_message(embed=rep,view=ShopSettingsView())
 
@@ -218,7 +218,7 @@ async def shop(ctx):
         rep = discord.Embed(title=shop_data["name"], description=shop_data["description"], color=0x5f00ff)
         rep.add_field(name="Add a product", value="🛒: ", inline=True)
         rep.add_field(name="Modify", value="⚙: modify a shop\n 📜: modify a product", inline=False)
-        await ctx.respond(embed=rep, view=ShopExistView(shop_data["$id"]))
+        await ctx.respond(embed=rep, view=ShopExistView(shop_data["id"]))
 
         if not bot.shop.get(str(guildId) + ":" + str(channel_id)):
             bot.shop[str(guildId) + ":" + str(channel_id)] =shop_data
@@ -243,11 +243,11 @@ class ShopModal(discord.ui.Modal):
 
         print(interaction.custom_id)
         data = bot.followup[interaction.custom_id]
-        print(data)
+        print(data.keys())
         guild = interaction.guild_id
         print(guild)
         user = interaction.user.id
-        channel = data["channel"]
+        channel = data["channel_id"]
         name = self.children[0].value
         description = self.children[1].value
         embed = discord.Embed(title="Modal Results")
@@ -303,7 +303,7 @@ class OfferModal(discord.ui.Modal):
         embed.add_field(name="description", value=description)
 
         if data.get("type") == "edit offer":
-            offer = database.editOffer(data["offer"]["$id"],price, name, description, imageUrl)
+            offer = database.editOffer(data["offer"]["id"],price, name, description, imageUrl)
         else:
             offer = database.addOffer(shop_id, price, name, description, imageUrl)
         await interaction.response.edit_message(embeds=[embed])
@@ -316,7 +316,7 @@ class OfferModal(discord.ui.Modal):
 class OfferMessageView(discord.ui.View):
     def __init__(self,offer) -> None:
         super().__init__()
-        self.add_item(discord.ui.Button(label="Buy",style=discord.ButtonStyle.green,url=f"https://senditeverywhere.com/{offer['$id']}",  emoji="💲"))
+        self.add_item(discord.ui.Button(label="Buy",style=discord.ButtonStyle.green,url=f"https://senditeverywhere.com/{offer['id']}",  emoji="💲"))
 
 async def create_offer_messsage(offer, shop):
 
@@ -325,7 +325,7 @@ async def create_offer_messsage(offer, shop):
         rep.set_image(url=str(offer["url"]))
     rep.add_field(name=f"**Desc : **", value=f"{offer['description']}", inline=False)
     rep.add_field(name=f"**Price : **", value=f"__{offer['price']} €__", inline=True)
-    channel = await bot.fetch_channel(shop["channel"])
+    channel = await bot.fetch_channel(shop["channel_id"])
     message = await channel.send(embed=rep,view=OfferMessageView(offer))
 
 

@@ -8,6 +8,7 @@ from discord.embeds import EmptyEmbed
 from discord.ext import commands
 from discord.ui import InputText
 
+
 from dotenv import load_dotenv
 
 
@@ -19,7 +20,7 @@ import os
 
 TOKEN=os.environ.get("TOKEN")
 apikey = os.environ.get("DATABASE_API")
-database = Database(apikey=apikey)
+database = Database()
 
 
 
@@ -215,10 +216,10 @@ async def shop(ctx):
         shop_data = bot.db.getShopByChannel(guildId,channel_id)
     if shop_data:
 
-        rep = discord.Embed(title=shop_data["name"], description=shop_data["description"], color=0x5f00ff)
+        rep = discord.Embed(title=shop_data.name, description=shop_data.description, color=0x5f00ff)
         rep.add_field(name="Add a product", value="🛒: ", inline=True)
         rep.add_field(name="Modify", value="⚙: modify a shop\n 📜: modify a product", inline=False)
-        await ctx.respond(embed=rep, view=ShopExistView(shop_data["id"]))
+        await ctx.respond(embed=rep, view=ShopExistView(shop_data.id))
 
         if not bot.shop.get(str(guildId) + ":" + str(channel_id)):
             bot.shop[str(guildId) + ":" + str(channel_id)] =shop_data
@@ -233,6 +234,14 @@ async def shop(ctx):
 """
 CREATING a SHOP
 """
+#shop message
+def createOfferMessage(offer):
+    #shop=#getShop
+    channelId = shop.channelId
+
+    pass
+
+#shop form
 class ShopModal(discord.ui.Modal):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -259,6 +268,8 @@ class ShopModal(discord.ui.Modal):
 
         database.addShop(guild,user,name,description,channel.id)
         await interaction.response.edit_message(embeds=[embed])
+
+#getting channel
 class CreateShopView(discord.ui.View):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
